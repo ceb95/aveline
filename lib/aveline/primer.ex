@@ -134,7 +134,7 @@ defmodule Aveline.Primer do
         ],
         [
           t(
-            "Tags in two sentences: every doc carries a few, the boards are tags grouped; make your own as you go. Then the standard table above if the workspace was set up the standard way, or, if custom, one line: start with ticket and a status, the rest comes."
+            "Tags in two sentences: every doc carries a few, the boards are tags grouped; make your own as you go. Then the tags this workspace actually has (aveline list-tags), as a short table by family; if it has Aveline's standard set, that is the table above. If it has none yet, one line: start with ticket and a status, the rest comes."
           )
         ],
         [t("An idea is a one-page pitch, what and why, before anything is built.")],
