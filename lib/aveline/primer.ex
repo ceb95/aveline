@@ -3,8 +3,9 @@ defmodule Aveline.Primer do
   Aveline's base doc, the "primer": how Aveline works, the words a person
   says to their agent, tags, and what to tell a person on a first session.
 
-  Served live by GET /api/workspaces/:slug/orientation as `primer`, ahead
-  of the workspace's own orientation doc (`doc`), so every agent in every
+  Served live by GET /api/workspaces/:slug/orientation as `primer`, beside
+  the workspace's own orientation doc (`doc`); the primer says to read it
+  first (JSON objects carry no order). So every agent in every
   workspace reads the current version on its next session. Nothing is
   copied into any workspace: this module is the only copy, it changes by
   PR, and `@version` is bumped with any change to the text so the CLI can
@@ -32,13 +33,28 @@ defmodule Aveline.Primer do
   @doc "The heading of the block written for the person, for tooling and tests."
   def person_heading, do: @person_heading
 
-  @doc "The primer as a block list, in reading order."
+  @doc """
+  The primer as a block list, in reading order. Ids are deterministic
+  (`b_primer_N`, list items `li_primer_N_M`; the block for the person is
+  `b_primer_person`) so a consumer keying blocks by id sees the same ids
+  on every request and every release.
+  """
   def blocks do
+    build()
+    |> Enum.with_index(1)
+    |> Enum.map(fn {block, i} ->
+      block
+      |> Map.put_new("id", "b_primer_#{i}")
+      |> number_items(i)
+    end)
+  end
+
+  defp build do
     [
       para([
         b("Aveline, for the agent reading this. "),
         t(
-          "This is Aveline's base doc, version #{@version}. Aveline serves it ahead of every workspace's own orientation, which follows it. Where the two disagree, the workspace doc wins: it is the team's rules, this is only how Aveline works. Nothing here is a rule a team cannot rewrite."
+          "This is Aveline's base doc, version #{@version}. Aveline serves it beside every workspace's own orientation (the doc in the same response): read this first, then the team's. Where the two disagree, the workspace doc wins: it is the team's rules, this is only how Aveline works. Nothing here is a rule a team cannot rewrite."
         )
       ]),
       h2("What Aveline is"),
@@ -74,7 +90,7 @@ defmodule Aveline.Primer do
       h2("Tags"),
       para([
         t(
-          "Every doc carries a few tags, and the boards are just tags grouped. A workspace set up the standard way has these; a team adds its own as it goes."
+          "Every doc carries a few tags, and the boards are just tags grouped. This is Aveline's standard set; a workspace may have been set up with its own, so run aveline list-tags before your first write and use what exists. A team adds tags as it goes."
         )
       ]),
       tag_table(),
@@ -98,10 +114,10 @@ defmodule Aveline.Primer do
       h2("The team's rules"),
       para([
         t(
-          "Everything after this doc is the team's orientation. Their rules live there; change the doc and the rules change. Read it to the end before touching anything."
+          "The team's orientation is the doc beside this one. Their rules live there; change the doc and the rules change. Read it to the end before touching anything."
         )
       ]),
-      h2(@person_heading),
+      h2(@person_heading) |> Map.put("id", "b_primer_person"),
       para([
         t(
           "This is guidance for what you say to a person on their first session in a workspace, not a script. Write it in your own words. Under about 200 words plus the tag table. Plain, second person, no jargon, no bullet dump. Cover, in this order:"
@@ -130,6 +146,17 @@ defmodule Aveline.Primer do
       ])
     ]
   end
+
+  defp number_items(%{"type" => "list", "items" => items} = block, i) do
+    items =
+      items
+      |> Enum.with_index(1)
+      |> Enum.map(fn {item, j} -> Map.put(item, "id", "li_primer_#{i}_#{j}") end)
+
+    %{block | "items" => items}
+  end
+
+  defp number_items(block, _i), do: block
 
   defp tag_table do
     %{

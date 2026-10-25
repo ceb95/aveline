@@ -16,10 +16,22 @@ defmodule Aveline.PrimerTest do
     assert blocks == Primer.blocks()
   end
 
-  test "every block validates against Block.validate/2" do
+  test "every block validates against Block.validate/2 with its own id" do
     for block <- Primer.blocks() do
-      assert {:ok, _} = Block.validate(block, mint_id?: true),
+      assert {:ok, _} = Block.validate(block),
              "primer block did not validate: #{inspect(block)}"
+    end
+  end
+
+  test "ids are present, unique and stable across calls" do
+    ids = Enum.map(Primer.blocks(), & &1["id"])
+    assert Enum.all?(ids, &String.starts_with?(&1, "b_primer_"))
+    assert length(ids) == length(Enum.uniq(ids))
+    assert ids == Enum.map(Primer.blocks(), & &1["id"])
+    assert "b_primer_person" in ids
+
+    for %{"type" => "list", "items" => items} <- Primer.blocks(), item <- items do
+      assert String.starts_with?(item["id"], "li_primer_")
     end
   end
 
